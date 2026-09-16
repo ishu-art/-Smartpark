@@ -1,0 +1,61 @@
+:root {
+  --asphalt: #211f1c;
+  --asphalt-soft: #3a362f;
+  --concrete: #efeae0;
+  --paper: #fbf8f0;
+  --paint-yellow: #f2b705;
+  --paint-yellow-deep: #c99200;
+  --route-blue: #2b5c88;
+  --signal-red: #b23a2e;
+  --ink: #1f1d1a;
+  --ink-soft: #625d52;
+  --line: rgba(31, 29, 26, 0.14);
+
+  --display: "Oswald", "Arial Narrow", sans-serif;
+  --body: "Inter", system-ui, -apple-system, sans-serif;
+
+  color-scheme: light;
+  color: var(--ink);
+  background: var(--concrete);
+  font-family: var(--body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--concrete);
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+/* NOTE: the old Vite template left a fixed 1126px width + border-inline
+   here, which is what caused the stray vertical line down the page. */
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink);
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font-family: var(--body);
+}
