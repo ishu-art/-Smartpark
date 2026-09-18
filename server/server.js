@@ -43,14 +43,10 @@ io.on("connection", (socket) => {
 // =====================================================
 // FEATURE 7: NOTIFICATION SYSTEM (HELPER)
 // =====================================================
-// Ye helper function har jagah se call hoga jab bhi
-// koi important event (booking/cancellation/auto-release)
-// hota hai. Frontend "notification" event sunke on-screen
-// notification dikhayega.
 
 const sendNotification = (type, message, data = {}) => {
   io.emit("notification", {
-    type, // "success" | "info" | "warning" | "error"
+    type,
     message,
     data,
     time: new Date().toISOString(),
@@ -231,70 +227,75 @@ app.get("/api/profile", authMiddleware, async (req, res) => {
 // CREATE PARKING LOT
 // =====================================================
 
-app.post("/api/parking-lots", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const {
-      name,
-      location,
-      totalSlots,
-      availableSlots,
-      pricePerHour,
-    } = req.body;
+app.post(
+  "/api/parking-lots",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const {
+        name,
+        location,
+        totalSlots,
+        availableSlots,
+        pricePerHour,
+      } = req.body;
 
-    if (
-      !name ||
-      !location ||
-      totalSlots === undefined ||
-      availableSlots === undefined ||
-      pricePerHour === undefined
-    ) {
-      return res.status(400).json({
-        message: "All parking lot fields are required",
+      if (
+        !name ||
+        !location ||
+        totalSlots === undefined ||
+        availableSlots === undefined ||
+        pricePerHour === undefined
+      ) {
+        return res.status(400).json({
+          message: "All parking lot fields are required",
+        });
+      }
+
+      if (totalSlots < 1) {
+        return res.status(400).json({
+          message: "Total slots must be at least 1",
+        });
+      }
+
+      if (availableSlots < 0 || availableSlots > totalSlots) {
+        return res.status(400).json({
+          message: "Available slots must be between 0 and total slots",
+        });
+      }
+
+      if (pricePerHour < 0) {
+        return res.status(400).json({
+          message: "Price per hour cannot be negative",
+        });
+      }
+
+      const parkingLot = new ParkingLot({
+        name,
+        location,
+        totalSlots,
+        availableSlots,
+        pricePerHour,
+      });
+
+      await parkingLot.save();
+
+      io.emit("lotCreated", parkingLot);
+
+      res.status(201).json({
+        message: "Parking lot created successfully",
+        parkingLot,
+      });
+    } catch (error) {
+      console.log("Create Parking Lot Error:", error);
+
+      res.status(500).json({
+        message: "Server error",
       });
     }
-
-    if (totalSlots < 1) {
-      return res.status(400).json({
-        message: "Total slots must be at least 1",
-      });
-    }
-
-    if (availableSlots < 0 || availableSlots > totalSlots) {
-      return res.status(400).json({
-        message: "Available slots must be between 0 and total slots",
-      });
-    }
-
-    if (pricePerHour < 0) {
-      return res.status(400).json({
-        message: "Price per hour cannot be negative",
-      });
-    }
-
-    const parkingLot = new ParkingLot({
-      name,
-      location,
-      totalSlots,
-      availableSlots,
-      pricePerHour,
-    });
-
-    await parkingLot.save();
-
-    io.emit("lotCreated", parkingLot);
-
-    res.status(201).json({
-      message: "Parking lot created successfully",
-      parkingLot,
-    });
-  } catch (error) {
-    console.log("Create Parking Lot Error:", error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
   }
-});
+);
 
 // =====================================================
 // GET ALL PARKING LOTS
@@ -306,13 +307,11 @@ app.get("/api/parking-lots", async (req, res) => {
 
     const filter = {};
 
-    // Search by name or location
     if (search) {
       const regex = new RegExp(search.trim(), "i");
       filter.$or = [{ name: regex }, { location: regex }];
     }
 
-    // Filter by price range
     if (minPrice || maxPrice) {
       filter.pricePerHour = {};
 
@@ -325,7 +324,6 @@ app.get("/api/parking-lots", async (req, res) => {
       }
     }
 
-    // Filter to only lots that currently have free slots
     if (availableOnly === "true") {
       filter.availableSlots = { $gt: 0 };
     }
@@ -351,66 +349,78 @@ app.get("/api/parking-lots", async (req, res) => {
 // CREATE PARKING SLOT
 // =====================================================
 
-app.post("/api/parking-slots", authMiddleware, adminMiddleware, async (req, res) => {
-  try {
-    const {
-      parkingLot,
-      slotNumber,
-      status,
-      floor,
-    } = req.body;
+app.post(
+  "/api/parking-slots",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const {
+        parkingLot,
+        slotNumber,
+        status,
+        floor,
+      } = req.body;
 
-    if (!parkingLot || !slotNumber) {
-      return res.status(400).json({
-        message: "Parking lot and slot number are required",
+      if (!parkingLot || !slotNumber) {
+        return res.status(400).json({
+          message: "Parking lot and slot number are required",
+        });
+      }
+
+      const existingParkingLot = await ParkingLot.findById(
+        parkingLot
+      );
+
+      if (!existingParkingLot) {
+        return res.status(404).json({
+          message: "Parking lot not found",
+        });
+      }
+
+      const existingSlot = await ParkingSlot.findOne({
+        parkingLot,
+        slotNumber,
+      });
+
+      if (existingSlot) {
+        return res.status(400).json({
+          message: "This parking slot already exists",
+        });
+      }
+
+      const newSlot = new ParkingSlot({
+        parkingLot,
+        slotNumber,
+        status: status || "available",
+        floor:
+          floor !== undefined && floor !== ""
+            ? Number(floor)
+            : 1,
+      });
+
+      await newSlot.save();
+
+      io.emit("slotCreated", newSlot);
+
+      sendNotification(
+        "success",
+        `New slot ${newSlot.slotNumber} added on floor ${newSlot.floor}`
+      );
+
+      res.status(201).json({
+        message: "Parking slot created successfully",
+        parkingSlot: newSlot,
+      });
+    } catch (error) {
+      console.log("Create Parking Slot Error:", error);
+
+      res.status(500).json({
+        message: "Server error",
       });
     }
-
-    const existingParkingLot = await ParkingLot.findById(
-      parkingLot
-    );
-
-    if (!existingParkingLot) {
-      return res.status(404).json({
-        message: "Parking lot not found",
-      });
-    }
-
-    const existingSlot = await ParkingSlot.findOne({
-      parkingLot,
-      slotNumber,
-    });
-
-    if (existingSlot) {
-      return res.status(400).json({
-        message: "This parking slot already exists",
-      });
-    }
-
-    const newSlot = new ParkingSlot({
-      parkingLot,
-      slotNumber,
-      status: status || "available",
-      floor: floor !== undefined && floor !== "" ? Number(floor) : 1,
-    });
-
-    await newSlot.save();
-
-    io.emit("slotCreated", newSlot);
-    sendNotification("success", `New slot ${newSlot.slotNumber} added on floor ${newSlot.floor}`);
-
-    res.status(201).json({
-      message: "Parking slot created successfully",
-      parkingSlot: newSlot,
-    });
-  } catch (error) {
-    console.log("Create Parking Slot Error:", error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
   }
-});
+);
 
 // =====================================================
 // GET PARKING SLOTS
@@ -433,23 +443,30 @@ app.get(
         });
       }
 
-      // Feature 9: Parking Floor Selection
-      // Sabhi floors ki list (filter lagne se pehle) taaki UI tabs bana sake
       const allSlotsForLot = await ParkingSlot.find({
         parkingLot: parkingLotId,
-      }).sort({ floor: 1, slotNumber: 1 });
+      }).sort({
+        floor: 1,
+        slotNumber: 1,
+      });
 
       const floors = [
-        ...new Set(allSlotsForLot.map((slot) => slot.floor ?? 1)),
+        ...new Set(
+          allSlotsForLot.map((slot) => slot.floor ?? 1)
+        ),
       ].sort((a, b) => a - b);
 
-      const slotFilter = { parkingLot: parkingLotId };
+      const slotFilter = {
+        parkingLot: parkingLotId,
+      };
 
       if (floor !== undefined && floor !== "") {
         slotFilter.floor = Number(floor);
       }
 
-      const parkingSlots = await ParkingSlot.find(slotFilter).sort({
+      const parkingSlots = await ParkingSlot.find(
+        slotFilter
+      ).sort({
         slotNumber: 1,
       });
 
@@ -494,14 +511,15 @@ app.put(
         });
       }
 
-      const parkingSlot = await ParkingSlot.findByIdAndUpdate(
-        slotId,
-        { status },
-        {
-          returnDocument: "after",
-          runValidators: true,
-        }
-      );
+      const parkingSlot =
+        await ParkingSlot.findByIdAndUpdate(
+          slotId,
+          { status },
+          {
+            returnDocument: "after",
+            runValidators: true,
+          }
+        );
 
       if (!parkingSlot) {
         return res.status(404).json({
@@ -541,7 +559,6 @@ app.post(
         endTime,
       } = req.body;
 
-      // Required fields
       if (
         !parkingLot ||
         !parkingSlot ||
@@ -554,11 +571,9 @@ app.post(
         });
       }
 
-      // Convert dates
       const start = new Date(startTime);
       const end = new Date(endTime);
 
-      // Validate dates
       if (
         isNaN(start.getTime()) ||
         isNaN(end.getTime())
@@ -568,14 +583,12 @@ app.post(
         });
       }
 
-      // End must be after start
       if (end <= start) {
         return res.status(400).json({
           message: "End time must be after start time",
         });
       }
 
-      // Check parking lot
       const existingParkingLot =
         await ParkingLot.findById(parkingLot);
 
@@ -585,7 +598,6 @@ app.post(
         });
       }
 
-      // Check parking slot
       const existingSlot = await ParkingSlot.findOne({
         _id: parkingSlot,
         parkingLot: parkingLot,
@@ -598,14 +610,12 @@ app.post(
         });
       }
 
-      // Check slot status
       if (existingSlot.status !== "available") {
         return res.status(400).json({
           message: "Parking slot is not available",
         });
       }
 
-      // Check overlapping reservation
       const overlappingReservation =
         await Reservation.findOne({
           parkingSlot: parkingSlot,
@@ -621,17 +631,14 @@ app.post(
         });
       }
 
-      // Calculate hours
       const durationInHours =
         (end.getTime() - start.getTime()) /
         (1000 * 60 * 60);
 
-      // Calculate amount
       const totalAmount =
         durationInHours *
         existingParkingLot.pricePerHour;
 
-      // Create reservation
       const reservation = new Reservation({
         user: req.user.userId,
         parkingLot: parkingLot,
@@ -647,35 +654,37 @@ app.post(
       // =====================================================
       // FEATURE 4: QR CODE BOOKING
       // =====================================================
-      // Booking confirm hote hi ek QR code generate karo jisme
-      // reservation ki basic details JSON string ke roop me hoti hain.
-      // Ye QR code base64 data URL ke roop me DB me store hota hai.
 
       try {
         const qrData = JSON.stringify({
-          reservationId: reservation._id.toString(),
+          reservationId:
+            reservation._id.toString(),
           slot: existingSlot.slotNumber,
           lot: existingParkingLot.name,
           startTime: reservation.startTime,
           endTime: reservation.endTime,
         });
 
-        const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+        const qrCodeDataUrl =
+          await QRCode.toDataURL(qrData);
 
         reservation.qrCode = qrCodeDataUrl;
+
         await reservation.save();
       } catch (qrError) {
-        console.log("QR Code Generation Error:", qrError);
-        // QR fail ho bhi jaye to booking cancel nahi hogi
+        console.log(
+          "QR Code Generation Error:",
+          qrError
+        );
       }
 
-      // Change slot status
       existingSlot.status = "reserved";
+
       await existingSlot.save();
 
-      // Decrease available slots
       if (existingParkingLot.availableSlots > 0) {
         existingParkingLot.availableSlots -= 1;
+
         await existingParkingLot.save();
       }
 
@@ -693,7 +702,10 @@ app.post(
         reservation,
       });
     } catch (error) {
-      console.log("Create Reservation Error:", error);
+      console.log(
+        "Create Reservation Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -711,21 +723,26 @@ app.get(
   authMiddleware,
   async (req, res) => {
     try {
-      const reservations = await Reservation.find({
-        user: req.user.userId,
-      })
-        .populate("parkingLot")
-        .populate("parkingSlot")
-        .sort({
-          createdAt: -1,
-        });
+      const reservations =
+        await Reservation.find({
+          user: req.user.userId,
+        })
+          .populate("parkingLot")
+          .populate("parkingSlot")
+          .sort({
+            createdAt: -1,
+          });
 
       res.status(200).json({
-        message: "Reservations fetched successfully",
+        message:
+          "Reservations fetched successfully",
         reservations,
       });
     } catch (error) {
-      console.log("Get Reservations Error:", error);
+      console.log(
+        "Get Reservations Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -760,11 +777,15 @@ app.get(
       }
 
       res.status(200).json({
-        message: "Reservation fetched successfully",
+        message:
+          "Reservation fetched successfully",
         reservation,
       });
     } catch (error) {
-      console.log("Get Reservation Error:", error);
+      console.log(
+        "Get Reservation Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -803,11 +824,10 @@ app.put(
         });
       }
 
-      // Cancel reservation
       reservation.status = "cancelled";
+
       await reservation.save();
 
-      // Make slot available
       const parkingSlot =
         await ParkingSlot.findById(
           reservation.parkingSlot
@@ -815,45 +835,63 @@ app.put(
 
       if (parkingSlot) {
         parkingSlot.status = "available";
+
         await parkingSlot.save();
       }
 
-      // Increase available slots
       const parkingLot =
         await ParkingLot.findById(
           reservation.parkingLot
         );
 
       if (parkingLot) {
-        parkingLot.availableSlots = Math.min(
-          parkingLot.availableSlots + 1,
-          parkingLot.totalSlots
-        );
+        parkingLot.availableSlots =
+          Math.min(
+            parkingLot.availableSlots + 1,
+            parkingLot.totalSlots
+          );
 
         await parkingLot.save();
       }
 
       if (parkingSlot) {
-        io.emit("slotUpdated", parkingSlot);
+        io.emit(
+          "slotUpdated",
+          parkingSlot
+        );
       }
 
       if (parkingLot) {
-        io.emit("lotUpdated", parkingLot);
+        io.emit(
+          "lotUpdated",
+          parkingLot
+        );
       }
 
-      io.emit("reservationUpdated", reservation);
+      io.emit(
+        "reservationUpdated",
+        reservation
+      );
 
       sendNotification(
         "warning",
-        `Booking cancelled${parkingSlot ? ` for slot ${parkingSlot.slotNumber}` : ""}`
+        `Booking cancelled${
+          parkingSlot
+            ? ` for slot ${parkingSlot.slotNumber}`
+            : ""
+        }`
       );
 
       res.status(200).json({
-        message: "Reservation cancelled successfully",
+        message:
+          "Reservation cancelled successfully",
         reservation,
       });
     } catch (error) {
-      console.log("Cancel Reservation Error:", error);
+      console.log(
+        "Cancel Reservation Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -892,11 +930,10 @@ app.put(
         });
       }
 
-      // Complete reservation
       reservation.status = "completed";
+
       await reservation.save();
 
-      // Make slot available
       const parkingSlot =
         await ParkingSlot.findById(
           reservation.parkingSlot
@@ -904,45 +941,63 @@ app.put(
 
       if (parkingSlot) {
         parkingSlot.status = "available";
+
         await parkingSlot.save();
       }
 
-      // Increase available slots
       const parkingLot =
         await ParkingLot.findById(
           reservation.parkingLot
         );
 
       if (parkingLot) {
-        parkingLot.availableSlots = Math.min(
-          parkingLot.availableSlots + 1,
-          parkingLot.totalSlots
-        );
+        parkingLot.availableSlots =
+          Math.min(
+            parkingLot.availableSlots + 1,
+            parkingLot.totalSlots
+          );
 
         await parkingLot.save();
       }
 
       if (parkingSlot) {
-        io.emit("slotUpdated", parkingSlot);
+        io.emit(
+          "slotUpdated",
+          parkingSlot
+        );
       }
 
       if (parkingLot) {
-        io.emit("lotUpdated", parkingLot);
+        io.emit(
+          "lotUpdated",
+          parkingLot
+        );
       }
 
-      io.emit("reservationUpdated", reservation);
+      io.emit(
+        "reservationUpdated",
+        reservation
+      );
 
       sendNotification(
         "info",
-        `Booking completed${parkingSlot ? ` for slot ${parkingSlot.slotNumber}` : ""}`
+        `Booking completed${
+          parkingSlot
+            ? ` for slot ${parkingSlot.slotNumber}`
+            : ""
+        }`
       );
 
       res.status(200).json({
-        message: "Reservation completed successfully",
+        message:
+          "Reservation completed successfully",
         reservation,
       });
     } catch (error) {
-      console.log("Complete Reservation Error:", error);
+      console.log(
+        "Complete Reservation Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -961,20 +1016,28 @@ app.get(
   adminMiddleware,
   async (req, res) => {
     try {
-      const reservations = await Reservation.find()
-        .populate("user", "name email")
-        .populate("parkingLot")
-        .populate("parkingSlot")
-        .sort({
-          createdAt: -1,
-        });
+      const reservations =
+        await Reservation.find()
+          .populate(
+            "user",
+            "name email"
+          )
+          .populate("parkingLot")
+          .populate("parkingSlot")
+          .sort({
+            createdAt: -1,
+          });
 
       res.status(200).json({
-        message: "All reservations fetched successfully",
+        message:
+          "All reservations fetched successfully",
         reservations,
       });
     } catch (error) {
-      console.log("Get All Reservations Error:", error);
+      console.log(
+        "Get All Reservations Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -993,93 +1056,153 @@ app.get(
   adminMiddleware,
   async (req, res) => {
     try {
-      // Booking counts by status
-      const totalBookings = await Reservation.countDocuments();
-      const activeBookings = await Reservation.countDocuments({
-        status: "active",
-      });
-      const completedBookings = await Reservation.countDocuments({
-        status: "completed",
-      });
-      const cancelledBookings = await Reservation.countDocuments({
-        status: "cancelled",
-      });
+      const totalBookings =
+        await Reservation.countDocuments();
 
-      // Revenue (completed + active bookings count towards revenue)
-      const revenueAgg = await Reservation.aggregate([
-        { $match: { status: { $in: ["active", "completed"] } } },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-      ]);
+      const activeBookings =
+        await Reservation.countDocuments({
+          status: "active",
+        });
 
-      const totalRevenue = revenueAgg[0]?.total || 0;
+      const completedBookings =
+        await Reservation.countDocuments({
+          status: "completed",
+        });
 
-      // Occupancy rate across all parking lots
-      const lots = await ParkingLot.find();
+      const cancelledBookings =
+        await Reservation.countDocuments({
+          status: "cancelled",
+        });
 
-      const totalSlotsAcrossLots = lots.reduce(
-        (sum, lot) => sum + lot.totalSlots,
-        0
-      );
+      const revenueAgg =
+        await Reservation.aggregate([
+          {
+            $match: {
+              status: {
+                $in: [
+                  "active",
+                  "completed",
+                ],
+              },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total: {
+                $sum: "$totalAmount",
+              },
+            },
+          },
+        ]);
 
-      const availableSlotsAcrossLots = lots.reduce(
-        (sum, lot) => sum + lot.availableSlots,
-        0
-      );
+      const totalRevenue =
+        revenueAgg[0]?.total || 0;
+
+      const lots =
+        await ParkingLot.find();
+
+      const totalSlotsAcrossLots =
+        lots.reduce(
+          (sum, lot) =>
+            sum + lot.totalSlots,
+          0
+        );
+
+      const availableSlotsAcrossLots =
+        lots.reduce(
+          (sum, lot) =>
+            sum + lot.availableSlots,
+          0
+        );
 
       const occupiedSlotsAcrossLots =
-        totalSlotsAcrossLots - availableSlotsAcrossLots;
+        totalSlotsAcrossLots -
+        availableSlotsAcrossLots;
 
       const occupancyRate =
         totalSlotsAcrossLots > 0
           ? Number(
               (
-                (occupiedSlotsAcrossLots / totalSlotsAcrossLots) *
+                (occupiedSlotsAcrossLots /
+                  totalSlotsAcrossLots) *
                 100
               ).toFixed(1)
             )
           : 0;
 
-      // Most-used slots (top 5 by number of reservations)
-      const mostUsedSlotsAgg = await Reservation.aggregate([
-        {
-          $group: {
-            _id: "$parkingSlot",
-            bookingCount: { $sum: 1 },
+      const mostUsedSlotsAgg =
+        await Reservation.aggregate([
+          {
+            $group: {
+              _id: "$parkingSlot",
+              bookingCount: {
+                $sum: 1,
+              },
+            },
           },
-        },
-        { $sort: { bookingCount: -1 } },
-        { $limit: 5 },
-        {
-          $lookup: {
-            from: "parkingslots",
-            localField: "_id",
-            foreignField: "_id",
-            as: "slotInfo",
+
+          {
+            $sort: {
+              bookingCount: -1,
+            },
           },
-        },
-        { $unwind: { path: "$slotInfo", preserveNullAndEmptyArrays: true } },
-        {
-          $lookup: {
-            from: "parkinglots",
-            localField: "slotInfo.parkingLot",
-            foreignField: "_id",
-            as: "lotInfo",
+
+          {
+            $limit: 5,
           },
-        },
-        { $unwind: { path: "$lotInfo", preserveNullAndEmptyArrays: true } },
-        {
-          $project: {
-            _id: 0,
-            slotNumber: "$slotInfo.slotNumber",
-            floor: "$slotInfo.floor",
-            lotName: "$lotInfo.name",
-            bookingCount: 1,
+
+          {
+            $lookup: {
+              from: "parkingslots",
+              localField: "_id",
+              foreignField: "_id",
+              as: "slotInfo",
+            },
           },
-        },
-      ]);
+
+          {
+            $unwind: {
+              path: "$slotInfo",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+
+          {
+            $lookup: {
+              from: "parkinglots",
+              localField:
+                "slotInfo.parkingLot",
+              foreignField: "_id",
+              as: "lotInfo",
+            },
+          },
+
+          {
+            $unwind: {
+              path: "$lotInfo",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+
+          {
+            $project: {
+              _id: 0,
+              slotNumber:
+                "$slotInfo.slotNumber",
+              floor:
+                "$slotInfo.floor",
+              lotName:
+                "$lotInfo.name",
+              bookingCount: 1,
+            },
+          },
+        ]);
 
       res.status(200).json({
-        message: "Analytics fetched successfully",
+        message:
+          "Analytics fetched successfully",
+
         analytics: {
           totalBookings,
           activeBookings,
@@ -1089,11 +1212,15 @@ app.get(
           occupancyRate,
           totalSlotsAcrossLots,
           availableSlotsAcrossLots,
-          mostUsedSlots: mostUsedSlotsAgg,
+          mostUsedSlots:
+            mostUsedSlotsAgg,
         },
       });
     } catch (error) {
-      console.log("Analytics Error:", error);
+      console.log(
+        "Analytics Error:",
+        error
+      );
 
       res.status(500).json({
         message: "Server error",
@@ -1106,177 +1233,256 @@ app.get(
 // FEATURE 10: SUBMIT FEEDBACK / RATING
 // =====================================================
 
-app.post("/api/feedback", authMiddleware, async (req, res) => {
-  try {
-    const { reservationId, rating, comment } = req.body;
+app.post(
+  "/api/feedback",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const {
+        reservationId,
+        rating,
+        comment,
+      } = req.body;
 
-    if (!reservationId || !rating) {
-      return res.status(400).json({
-        message: "Reservation and rating are required",
+      if (!reservationId || !rating) {
+        return res.status(400).json({
+          message:
+            "Reservation and rating are required",
+        });
+      }
+
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({
+          message:
+            "Rating must be between 1 and 5",
+        });
+      }
+
+      const reservation =
+        await Reservation.findOne({
+          _id: reservationId,
+          user: req.user.userId,
+        });
+
+      if (!reservation) {
+        return res.status(404).json({
+          message:
+            "Reservation not found",
+        });
+      }
+
+      if (reservation.status !== "completed") {
+        return res.status(400).json({
+          message:
+            "Feedback sirf completed bookings ke liye diya ja sakta hai",
+        });
+      }
+
+      const existingFeedback =
+        await Feedback.findOne({
+          reservation: reservationId,
+        });
+
+      if (existingFeedback) {
+        return res.status(400).json({
+          message:
+            "Is booking ke liye feedback pehle se diya ja chuka hai",
+        });
+      }
+
+      const feedback =
+        new Feedback({
+          user: req.user.userId,
+          reservation: reservationId,
+          parkingLot:
+            reservation.parkingLot,
+          rating,
+          comment: comment || "",
+        });
+
+      await feedback.save();
+
+      sendNotification(
+        "success",
+        "Thanks for your feedback!"
+      );
+
+      res.status(201).json({
+        message:
+          "Feedback submitted successfully",
+        feedback,
+      });
+    } catch (error) {
+      console.log(
+        "Submit Feedback Error:",
+        error
+      );
+
+      res.status(500).json({
+        message: "Server error",
       });
     }
-
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({
-        message: "Rating must be between 1 and 5",
-      });
-    }
-
-    const reservation = await Reservation.findOne({
-      _id: reservationId,
-      user: req.user.userId,
-    });
-
-    if (!reservation) {
-      return res.status(404).json({
-        message: "Reservation not found",
-      });
-    }
-
-    if (reservation.status !== "completed") {
-      return res.status(400).json({
-        message: "Feedback sirf completed bookings ke liye diya ja sakta hai",
-      });
-    }
-
-    const existingFeedback = await Feedback.findOne({
-      reservation: reservationId,
-    });
-
-    if (existingFeedback) {
-      return res.status(400).json({
-        message: "Is booking ke liye feedback pehle se diya ja chuka hai",
-      });
-    }
-
-    const feedback = new Feedback({
-      user: req.user.userId,
-      reservation: reservationId,
-      parkingLot: reservation.parkingLot,
-      rating,
-      comment: comment || "",
-    });
-
-    await feedback.save();
-
-    sendNotification("success", "Thanks for your feedback!");
-
-    res.status(201).json({
-      message: "Feedback submitted successfully",
-      feedback,
-    });
-  } catch (error) {
-    console.log("Submit Feedback Error:", error);
-
-    res.status(500).json({
-      message: "Server error",
-    });
   }
-});
+);
 
 // =====================================================
 // FEATURE 10: GET FEEDBACK FOR A PARKING LOT
 // =====================================================
 
-app.get("/api/feedback/:parkingLotId", async (req, res) => {
-  try {
-    const { parkingLotId } = req.params;
+app.get(
+  "/api/feedback/:parkingLotId",
+  async (req, res) => {
+    try {
+      const { parkingLotId } =
+        req.params;
 
-    const feedbacks = await Feedback.find({
-      parkingLot: parkingLotId,
-    })
-      .populate("user", "name")
-      .sort({ createdAt: -1 });
-
-    const averageRating =
-      feedbacks.length > 0
-        ? Number(
-            (
-              feedbacks.reduce((sum, fb) => sum + fb.rating, 0) /
-              feedbacks.length
-            ).toFixed(1)
+      const feedbacks =
+        await Feedback.find({
+          parkingLot: parkingLotId,
+        })
+          .populate(
+            "user",
+            "name"
           )
-        : 0;
+          .sort({
+            createdAt: -1,
+          });
 
-    res.status(200).json({
-      message: "Feedback fetched successfully",
-      feedbacks,
-      averageRating,
-      totalFeedbacks: feedbacks.length,
-    });
-  } catch (error) {
-    console.log("Get Feedback Error:", error);
+      const averageRating =
+        feedbacks.length > 0
+          ? Number(
+              (
+                feedbacks.reduce(
+                  (sum, fb) =>
+                    sum + fb.rating,
+                  0
+                ) /
+                feedbacks.length
+              ).toFixed(1)
+            )
+          : 0;
 
-    res.status(500).json({
-      message: "Server error",
-    });
+      res.status(200).json({
+        message:
+          "Feedback fetched successfully",
+        feedbacks,
+        averageRating,
+        totalFeedbacks:
+          feedbacks.length,
+      });
+    } catch (error) {
+      console.log(
+        "Get Feedback Error:",
+        error
+      );
+
+      res.status(500).json({
+        message: "Server error",
+      });
+    }
   }
-});
+);
 
 // =====================================================
 // FEATURE 8: AUTOMATIC SLOT RELEASE (CRON JOB)
 // =====================================================
-// Har 1 minute me check karo ki koi active booking expire
-// (endTime nikal chuka) to nahi hui. Agar hui hai to usko
-// "completed" mark karo, slot automatically "available" kar do
-// aur sabko real-time notification bhejo.
 
-cron.schedule("* * * * *", async () => {
-  try {
-    const now = new Date();
+cron.schedule(
+  "* * * * *",
+  async () => {
+    try {
+      const now = new Date();
 
-    const expiredReservations = await Reservation.find({
-      status: "active",
-      endTime: { $lte: now },
-    });
+      const expiredReservations =
+        await Reservation.find({
+          status: "active",
+          endTime: {
+            $lte: now,
+          },
+        });
 
-    for (const reservation of expiredReservations) {
-      reservation.status = "completed";
-      reservation.autoReleased = true;
-      await reservation.save();
+      for (
+        const reservation of expiredReservations
+      ) {
+        reservation.status =
+          "completed";
 
-      const parkingSlot = await ParkingSlot.findById(
-        reservation.parkingSlot
-      );
+        reservation.autoReleased =
+          true;
 
-      if (parkingSlot) {
-        parkingSlot.status = "available";
-        await parkingSlot.save();
-        io.emit("slotUpdated", parkingSlot);
-      }
+        await reservation.save();
 
-      const parkingLot = await ParkingLot.findById(
-        reservation.parkingLot
-      );
+        const parkingSlot =
+          await ParkingSlot.findById(
+            reservation.parkingSlot
+          );
 
-      if (parkingLot) {
-        parkingLot.availableSlots = Math.min(
-          parkingLot.availableSlots + 1,
-          parkingLot.totalSlots
+        if (parkingSlot) {
+          parkingSlot.status =
+            "available";
+
+          await parkingSlot.save();
+
+          io.emit(
+            "slotUpdated",
+            parkingSlot
+          );
+        }
+
+        const parkingLot =
+          await ParkingLot.findById(
+            reservation.parkingLot
+          );
+
+        if (parkingLot) {
+          parkingLot.availableSlots =
+            Math.min(
+              parkingLot.availableSlots + 1,
+              parkingLot.totalSlots
+            );
+
+          await parkingLot.save();
+
+          io.emit(
+            "lotUpdated",
+            parkingLot
+          );
+        }
+
+        io.emit(
+          "reservationUpdated",
+          reservation
         );
 
-        await parkingLot.save();
-        io.emit("lotUpdated", parkingLot);
+        sendNotification(
+          "info",
+          `Slot ${
+            parkingSlot?.slotNumber || ""
+          } automatically released (time expired)`
+        );
       }
-
-      io.emit("reservationUpdated", reservation);
-
-      sendNotification(
-        "info",
-        `Slot ${parkingSlot?.slotNumber || ""} automatically released (time expired)`
+    } catch (error) {
+      console.log(
+        "Auto Slot Release Error:",
+        error
       );
     }
-  } catch (error) {
-    console.log("Auto Slot Release Error:", error);
   }
-});
+);
 
 // =====================================================
 // START SERVER
 // =====================================================
 
-const PORT = process.env.PORT || 5000;
+const PORT =
+  Number(process.env.PORT) || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+server.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `Server is running on port ${PORT}`
+    );
+  }
+);
