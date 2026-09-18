@@ -3,7 +3,7 @@ import "./App.css";
 import Login from "./Login";
 import Register from "./Register";
 import Dashboard from "./Dashboard";
-import MyBookings from "./MyBookings";
+import MyBookings from "./Mybookings";
 import ManagerDashboard from "./ManagerDashboard";
 import NotificationCenter from "./NotificationCenter";
 
