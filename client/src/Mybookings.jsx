@@ -4,8 +4,6 @@ import StarRating from "./StarRating";
 // =========================
 // FEATURE 6: BOOKING TIMER
 // =========================
-// Active booking ka endTime tak kitna time bacha hai, wo
-// har second update hoke countdown ki tarah dikhata hai.
 
 function BookingTimer({ endTime }) {
   const [remaining, setRemaining] = useState(
@@ -68,7 +66,7 @@ function FeedbackForm({ reservationId, onSubmitted }) {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "https://smartpark1-o9go.onrender.com/api/feedback",
+        "http://localhost:5000/api/feedback",
         {
           method: "POST",
           headers: {
@@ -133,10 +131,10 @@ function MyBookings({ user, onLogout, onBack }) {
   const [message, setMessage] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
 
-  // Feature 4: QR Code Booking — kis booking ka QR abhi open hai
+  // Feature 4: QR Code Booking
   const [qrOpenId, setQrOpenId] = useState(null);
 
-  // Feature 10: Feedback/Rating — kis booking ka feedback form khula hai
+  // Feature 10: Feedback/Rating
   const [feedbackOpenId, setFeedbackOpenId] = useState(null);
   const [feedbackGivenIds, setFeedbackGivenIds] = useState([]);
 
@@ -152,7 +150,7 @@ function MyBookings({ user, onLogout, onBack }) {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "https://smartpark1-o9go.onrender.com/api/reservations",
+        "http://localhost:5000/api/reservations",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -194,7 +192,7 @@ function MyBookings({ user, onLogout, onBack }) {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `https://smartpark1-o9go.onrender.com/api/reservations/${reservationId}/cancel`,
+        `http://localhost:5000/api/reservations/${reservationId}/cancel`,
         {
           method: "PUT",
           headers: {
@@ -233,6 +231,7 @@ function MyBookings({ user, onLogout, onBack }) {
     <div className="dashboard">
 
       {/* NAVBAR */}
+
       <nav className="dashboard-navbar">
 
         <div className="logo">
@@ -258,17 +257,22 @@ function MyBookings({ user, onLogout, onBack }) {
       </nav>
 
       {/* MAIN CONTENT */}
+
       <main className="dashboard-content">
 
         <div className="dashboard-header">
           <div>
             <h1>My Bookings</h1>
-            <p>All your parking reservations, past and present.</p>
+            <p>
+              All your parking reservations, past and present.
+            </p>
           </div>
         </div>
 
         {message && (
-          <p className="dashboard-message">{message}</p>
+          <p className="dashboard-message">
+            {message}
+          </p>
         )}
 
         {loading && (
@@ -277,142 +281,198 @@ function MyBookings({ user, onLogout, onBack }) {
           </p>
         )}
 
-        {!loading && reservations.length === 0 && !message && (
-          <div className="empty-state">
-            <h2>No Bookings Yet</h2>
-            <p>Reserve a parking slot to see it here.</p>
-          </div>
-        )}
+        {!loading &&
+          reservations.length === 0 &&
+          !message && (
+            <div className="empty-state">
+              <h2>No Bookings Yet</h2>
+              <p>
+                Reserve a parking slot to see it here.
+              </p>
+            </div>
+          )}
 
-        {!loading && reservations.length > 0 && (
-          <div className="bookings-list">
-            {reservations.map((reservation) => (
-              <div className="booking-card" key={reservation._id}>
+        {!loading &&
+          reservations.length > 0 && (
+            <div className="bookings-list">
 
-                <div className="booking-card-header">
-                  <h2>
-                    {reservation.parkingLot?.name || "Parking Lot"}
-                  </h2>
+              {reservations.map((reservation) => (
+                <div
+                  className="booking-card"
+                  key={reservation._id}
+                >
 
-                  <span
-                    className={`booking-status booking-status-${reservation.status}`}
-                  >
-                    {reservation.status}
-                  </span>
-                </div>
+                  <div className="booking-card-header">
 
-                <p className="parking-location">
-                  📍 {reservation.parkingLot?.location || "-"}
-                </p>
+                    <h2>
+                      {reservation.parkingLot?.name ||
+                        "Parking Lot"}
+                    </h2>
 
-                <p>
-                  Slot: <strong>{reservation.parkingSlot?.slotNumber || "-"}</strong>
-                  {reservation.parkingSlot?.floor !== undefined && (
-                    <> (Floor {reservation.parkingSlot.floor})</>
-                  )}
-                </p>
-
-                <p>
-                  From: {formatDateTime(reservation.startTime)}
-                </p>
-
-                <p>
-                  To: {formatDateTime(reservation.endTime)}
-                </p>
-
-                <p>
-                  Total: <strong>₹{reservation.totalAmount}</strong>
-                </p>
-
-                {/* Feature 6: BOOKING TIMER — active bookings ke liye countdown */}
-                {reservation.status === "active" && (
-                  <BookingTimer endTime={reservation.endTime} />
-                )}
-
-                {/* Feature 4: QR CODE BOOKING */}
-                {reservation.qrCode && (
-                  <>
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() =>
-                        setQrOpenId(
-                          qrOpenId === reservation._id
-                            ? null
-                            : reservation._id
-                        )
-                      }
+                    <span
+                      className={`booking-status booking-status-${reservation.status}`}
                     >
-                      {qrOpenId === reservation._id
-                        ? "Hide QR Code"
-                        : "Show QR Code"}
-                    </button>
+                      {reservation.status}
+                    </span>
 
-                    {qrOpenId === reservation._id && (
-                      <div className="qr-inline-wrapper">
-                        <img
-                          src={reservation.qrCode}
-                          alt="Booking QR Code"
-                          className="qr-code-image"
-                        />
-                      </div>
+                  </div>
+
+                  <p className="parking-location">
+                    📍{" "}
+                    {reservation.parkingLot?.location || "-"}
+                  </p>
+
+                  <p>
+                    Slot:{" "}
+                    <strong>
+                      {reservation.parkingSlot?.slotNumber ||
+                        "-"}
+                    </strong>
+
+                    {reservation.parkingSlot?.floor !==
+                      undefined && (
+                      <>
+                        {" "}
+                        (Floor{" "}
+                        {reservation.parkingSlot.floor})
+                      </>
                     )}
-                  </>
-                )}
+                  </p>
 
-                {reservation.status === "active" && (
-                  <button
-                    type="button"
-                    className="ghost-button"
-                    disabled={cancellingId === reservation._id}
-                    onClick={() => handleCancel(reservation._id)}
-                  >
-                    {cancellingId === reservation._id
-                      ? "Cancelling..."
-                      : "Cancel Booking"}
-                  </button>
-                )}
+                  <p>
+                    From:{" "}
+                    {formatDateTime(
+                      reservation.startTime
+                    )}
+                  </p>
 
-                {/* Feature 10: FEEDBACK / RATING — sirf completed bookings ke liye */}
-                {reservation.status === "completed" &&
-                  !feedbackGivenIds.includes(reservation._id) && (
+                  <p>
+                    To:{" "}
+                    {formatDateTime(
+                      reservation.endTime
+                    )}
+                  </p>
+
+                  <p>
+                    Total:{" "}
+                    <strong>
+                      ₹{reservation.totalAmount}
+                    </strong>
+                  </p>
+
+                  {/* FEATURE 6: BOOKING TIMER */}
+
+                  {reservation.status === "active" && (
+                    <BookingTimer
+                      endTime={reservation.endTime}
+                    />
+                  )}
+
+                  {/* FEATURE 4: QR CODE BOOKING */}
+
+                  {reservation.qrCode && (
                     <>
-                      {feedbackOpenId !== reservation._id ? (
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          onClick={() =>
-                            setFeedbackOpenId(reservation._id)
-                          }
-                        >
-                          Rate this parking
-                        </button>
-                      ) : (
-                        <FeedbackForm
-                          reservationId={reservation._id}
-                          onSubmitted={() => {
-                            setFeedbackGivenIds((prev) => [
-                              ...prev,
-                              reservation._id,
-                            ]);
-                            setFeedbackOpenId(null);
-                          }}
-                        />
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() =>
+                          setQrOpenId(
+                            qrOpenId === reservation._id
+                              ? null
+                              : reservation._id
+                          )
+                        }
+                      >
+                        {qrOpenId === reservation._id
+                          ? "Hide QR Code"
+                          : "Show QR Code"}
+                      </button>
+
+                      {qrOpenId === reservation._id && (
+                        <div className="qr-inline-wrapper">
+                          <img
+                            src={reservation.qrCode}
+                            alt="Booking QR Code"
+                            className="qr-code-image"
+                          />
+                        </div>
                       )}
                     </>
                   )}
 
-                {reservation.status === "completed" &&
-                  feedbackGivenIds.includes(reservation._id) && (
-                    <p className="dashboard-message">
-                      ✅ Thanks for your feedback!
-                    </p>
+                  {/* CANCEL BOOKING */}
+
+                  {reservation.status === "active" && (
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      disabled={
+                        cancellingId === reservation._id
+                      }
+                      onClick={() =>
+                        handleCancel(reservation._id)
+                      }
+                    >
+                      {cancellingId === reservation._id
+                        ? "Cancelling..."
+                        : "Cancel Booking"}
+                    </button>
                   )}
 
-              </div>
-            ))}
-          </div>
-        )}
+                  {/* FEATURE 10: FEEDBACK / RATING */}
+
+                  {reservation.status === "completed" &&
+                    !feedbackGivenIds.includes(
+                      reservation._id
+                    ) && (
+                      <>
+                        {feedbackOpenId !==
+                        reservation._id ? (
+                          <button
+                            type="button"
+                            className="ghost-button"
+                            onClick={() =>
+                              setFeedbackOpenId(
+                                reservation._id
+                              )
+                            }
+                          >
+                            Rate this parking
+                          </button>
+                        ) : (
+                          <FeedbackForm
+                            reservationId={
+                              reservation._id
+                            }
+                            onSubmitted={() => {
+                              setFeedbackGivenIds(
+                                (prev) => [
+                                  ...prev,
+                                  reservation._id,
+                                ]
+                              );
+
+                              setFeedbackOpenId(null);
+                            }}
+                          />
+                        )}
+                      </>
+                    )}
+
+                  {reservation.status === "completed" &&
+                    feedbackGivenIds.includes(
+                      reservation._id
+                    ) && (
+                      <p className="dashboard-message">
+                        ✅ Thanks for your feedback!
+                      </p>
+                    )}
+
+                </div>
+              ))}
+
+            </div>
+          )}
 
       </main>
 

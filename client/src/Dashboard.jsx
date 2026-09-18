@@ -49,9 +49,9 @@ function Dashboard({ user, onLogout, onViewBookings }) {
 
       const query = params.toString();
 
-      // Render backend URL
+      // Local backend URL
       const response = await fetch(
-        `https://smartpark1-o9go.onrender.com/api/parking-lots${
+        `http://localhost:5000/api/parking-lots${
           query ? `?${query}` : ""
         }`
       );

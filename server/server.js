@@ -26,10 +26,27 @@ const app = express();
 
 const server = http.createServer(app);
 
-const io = new Server(server, {
-  cors: {
-    origin: "*",
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://smartpark-git-main-smart-park1.vercel.app",
+  "https://smartpark-63qou2w9n-smart-park1.vercel.app"
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
   },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+};
+
+const io = new Server(server, {
+  cors: corsOptions
 });
 
 io.on("connection", (socket) => {
@@ -57,7 +74,7 @@ const sendNotification = (type, message, data = {}) => {
 // MIDDLEWARE
 // =====================================================
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // =====================================================
@@ -884,7 +901,7 @@ app.put(
 
       res.status(200).json({
         message:
-          "Reservation cancelled successfully",
+          "Booking cancelled successfully",
         reservation,
       });
     } catch (error) {
@@ -990,7 +1007,7 @@ app.put(
 
       res.status(200).json({
         message:
-          "Reservation completed successfully",
+          "Booking completed successfully",
         reservation,
       });
     } catch (error) {

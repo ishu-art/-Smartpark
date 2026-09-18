@@ -27,10 +27,11 @@ function ParkingSlots({ parkingLot, onBack, user }) {
       setLoading(true);
       setMessage("");
 
-      const query = floor && floor !== "all" ? `?floor=${floor}` : "";
+      const query =
+        floor && floor !== "all" ? `?floor=${floor}` : "";
 
       const response = await fetch(
-        `https://smartpark1-o9go.onrender.com/api/parking-slots/${lotId}${query}`
+        `http://localhost:5000/api/parking-slots/${lotId}${query}`
       );
 
       const data = await response.json();
@@ -59,6 +60,7 @@ function ParkingSlots({ parkingLot, onBack, user }) {
       fetchSlots(parkingLot._id, "all");
       setSelectedFloor("all");
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parkingLot]);
 
@@ -90,7 +92,8 @@ function ParkingSlots({ parkingLot, onBack, user }) {
         return;
       }
 
-      // Agar koi specific floor select kiya hai to us floor ke alawa slot na dikhao
+      // Agar koi specific floor select kiya hai
+      // to us floor ke alawa slot na dikhao
       if (
         selectedFloor !== "all" &&
         Number(newSlot.floor) !== Number(selectedFloor)
@@ -99,8 +102,12 @@ function ParkingSlots({ parkingLot, onBack, user }) {
       }
 
       setSlots((prev) => {
-        const exists = prev.some((slot) => slot._id === newSlot._id);
+        const exists = prev.some(
+          (slot) => slot._id === newSlot._id
+        );
+
         if (exists) return prev;
+
         return [...prev, newSlot].sort((a, b) =>
           a.slotNumber.localeCompare(b.slotNumber)
         );
@@ -147,12 +154,14 @@ function ParkingSlots({ parkingLot, onBack, user }) {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        setMessage("Login token nahi mila. Please login again.");
+        setMessage(
+          "Login token nahi mila. Please login again."
+        );
         return;
       }
 
       const response = await fetch(
-        "https://smartpark1-o9go.onrender.com/api/reservations",
+        "http://localhost:5000/api/reservations",
         {
           method: "POST",
           headers: {
@@ -177,7 +186,8 @@ function ParkingSlots({ parkingLot, onBack, user }) {
 
       setMessage("Reservation successful!");
 
-      // Feature 4: QR Code Booking — booking confirm hote hi QR dikhao
+      // Feature 4: QR Code Booking
+      // Booking confirm hote hi QR dikhao
       setConfirmedBooking(data.reservation);
 
       setSelectedSlot(null);
@@ -186,10 +196,11 @@ function ParkingSlots({ parkingLot, onBack, user }) {
 
       // Slots dobara load karo
       fetchSlots(parkingLot._id, selectedFloor);
-
     } catch (error) {
       console.error("Reservation error:", error);
-      setMessage("Reservation ke time server error aa gaya");
+      setMessage(
+        "Reservation ke time server error aa gaya"
+      );
     } finally {
       setBookingLoading(false);
     }
@@ -248,12 +259,16 @@ function ParkingSlots({ parkingLot, onBack, user }) {
         </h2>
 
         {/* Feature 9: FLOOR SELECTION TABS */}
+
         {floors.length > 1 && (
           <div className="floor-tabs">
+
             <button
               type="button"
               className={`role-option ${
-                selectedFloor === "all" ? "role-option-active" : ""
+                selectedFloor === "all"
+                  ? "role-option-active"
+                  : ""
               }`}
               onClick={() => handleFloorChange("all")}
             >
@@ -274,14 +289,22 @@ function ParkingSlots({ parkingLot, onBack, user }) {
                 Floor {floor}
               </button>
             ))}
+
           </div>
         )}
 
         {/* Feature 4: QR CODE CONFIRMATION */}
+
         {confirmedBooking && (
           <div className="parking-card qr-confirmation-card">
-            <h2>✅ Booking Confirmed!</h2>
-            <p>Show this QR code at the parking gate.</p>
+
+            <h2>
+              ✅ Booking Confirmed!
+            </h2>
+
+            <p>
+              Show this QR code at the parking gate.
+            </p>
 
             {confirmedBooking.qrCode && (
               <img
@@ -292,7 +315,10 @@ function ParkingSlots({ parkingLot, onBack, user }) {
             )}
 
             <p>
-              Total: <strong>₹{confirmedBooking.totalAmount}</strong>
+              Total:{" "}
+              <strong>
+                ₹{confirmedBooking.totalAmount}
+              </strong>
             </p>
 
             <button
@@ -302,6 +328,7 @@ function ParkingSlots({ parkingLot, onBack, user }) {
             >
               Close
             </button>
+
           </div>
         )}
 
@@ -344,7 +371,9 @@ function ParkingSlots({ parkingLot, onBack, user }) {
               return (
                 <div
                   className={`parking-card ${
-                    isAvailable ? "slot-available" : "slot-occupied"
+                    isAvailable
+                      ? "slot-available"
+                      : "slot-occupied"
                   }`}
                   key={slot._id}
                 >

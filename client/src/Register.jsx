@@ -33,9 +33,8 @@ function Register({
     try {
       setLoading(true);
 
-      // Yahan asli backend ko call kar rahe hain
       const response = await fetch(
-        "https://smartpark1-o9go.onrender.com/api/register",
+        "http://localhost:5000/api/register",
         {
           method: "POST",
           headers: {
@@ -83,116 +82,118 @@ function Register({
 
       <div className="login-panel">
 
-      <div className="login-container">
-
-        <button
-          type="button"
-          className="back-button"
-          onClick={onBack}
-        >
-          ← Back
-        </button>
-
-        <h1>Create Account</h1>
-
-        <p>Register for SmartPark</p>
-
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="success-message">
-            {success}
-          </div>
-        )}
-
-        <form onSubmit={handleRegister}>
-
-          <div className="form-group">
-            <label>Name</label>
-
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email</label>
-
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Password</label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>I am a</label>
-
-            <div className="role-toggle">
-              <button
-                type="button"
-                className={`role-option ${
-                  role === "user" ? "role-option-active" : ""
-                }`}
-                onClick={() => setRole("user")}
-              >
-                Driver
-              </button>
-
-              <button
-                type="button"
-                className={`role-option ${
-                  role === "admin" ? "role-option-active" : ""
-                }`}
-                onClick={() => setRole("admin")}
-              >
-                Manager
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={loading}
-          >
-            {loading ? "Registering..." : "Register"}
-          </button>
-
-        </form>
-
-        <div className="register-link">
-          Already have an account?
+        <div className="login-container">
 
           <button
             type="button"
-            className="link-button"
-            onClick={onLogin}
+            className="back-button"
+            onClick={onBack}
           >
-            Login
+            ← Back
           </button>
-        </div>
 
-      </div>
+          <h1>Create Account</h1>
+
+          <p>Register for SmartPark</p>
+
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="success-message">
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={handleRegister}>
+
+            <div className="form-group">
+              <label>Name</label>
+
+              <input
+                type="text"
+                placeholder="Enter your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Email</label>
+
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Password</label>
+
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>I am a</label>
+
+              <div className="role-toggle">
+
+                <button
+                  type="button"
+                  className={`role-option ${
+                    role === "user" ? "role-option-active" : ""
+                  }`}
+                  onClick={() => setRole("user")}
+                >
+                  Driver
+                </button>
+
+                <button
+                  type="button"
+                  className={`role-option ${
+                    role === "admin" ? "role-option-active" : ""
+                  }`}
+                  onClick={() => setRole("admin")}
+                >
+                  Manager
+                </button>
+
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loading}
+            >
+              {loading ? "Registering..." : "Register"}
+            </button>
+
+          </form>
+
+          <div className="register-link">
+            Already have an account?
+
+            <button
+              type="button"
+              className="link-button"
+              onClick={onLogin}
+            >
+              Login
+            </button>
+          </div>
+
+        </div>
 
       </div>
 

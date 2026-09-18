@@ -20,7 +20,7 @@ function Login({ onLoginSuccess, onRegister, onBack }) {
       setLoading(true);
 
       const response = await fetch(
-  "https://smartpark1-o9go.onrender.com/api/login",
+        "http://localhost:5000/api/login",
         {
           method: "POST",
           headers: {
@@ -73,98 +73,98 @@ function Login({ onLoginSuccess, onRegister, onBack }) {
 
       <div className="login-panel">
 
-      <div className="login-card">
+        <div className="login-card">
 
-        <h1>SmartPark</h1>
+          <h1>SmartPark</h1>
 
-        <h2>Login</h2>
+          <h2>Login</h2>
 
-        <p className="login-subtitle">
-          Login to reserve your parking slot
-        </p>
-
-        <form onSubmit={handleLogin}>
-
-          {/* EMAIL */}
-
-          <div className="form-group">
-
-            <label>Email</label>
-
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-          </div>
-
-          {/* PASSWORD */}
-
-          <div className="form-group">
-
-            <label>Password</label>
-
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-
-          </div>
-
-          {/* LOGIN BUTTON */}
-
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-
-        </form>
-
-        {/* MESSAGE */}
-
-        {message && (
-          <p className="login-message">
-            {message}
+          <p className="login-subtitle">
+            Login to reserve your parking slot
           </p>
-        )}
 
-        {/* REGISTER */}
+          <form onSubmit={handleLogin}>
 
-        <div className="register-link">
+            {/* EMAIL */}
 
-          <span>
-            Don't have an account?
-          </span>
+            <div className="form-group">
+
+              <label>Email</label>
+
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+
+            </div>
+
+            {/* PASSWORD */}
+
+            <div className="form-group">
+
+              <label>Password</label>
+
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+
+            </div>
+
+            {/* LOGIN BUTTON */}
+
+            <button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+
+          </form>
+
+          {/* MESSAGE */}
+
+          {message && (
+            <p className="login-message">
+              {message}
+            </p>
+          )}
+
+          {/* REGISTER */}
+
+          <div className="register-link">
+
+            <span>
+              Don't have an account?
+            </span>
+
+            <button
+              type="button"
+              className="link-button"
+              onClick={onRegister}
+            >
+              Register
+            </button>
+
+          </div>
+
+          {/* BACK */}
 
           <button
             type="button"
             className="link-button"
-            onClick={onRegister}
+            onClick={onBack}
           >
-            Register
+            ← Back to Home
           </button>
 
         </div>
-
-        {/* BACK */}
-
-        <button
-          type="button"
-          className="link-button"
-          onClick={onBack}
-        >
-          ← Back to Home
-        </button>
-
-      </div>
 
       </div>
 
