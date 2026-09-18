@@ -19,11 +19,15 @@ function Dashboard({ user, onLogout, onViewBookings }) {
       setMessage("");
 
       const activeSearch =
-        overrides.search !== undefined ? overrides.search : search;
+        overrides.search !== undefined
+          ? overrides.search
+          : search;
+
       const activeMaxPrice =
         overrides.maxPrice !== undefined
           ? overrides.maxPrice
           : maxPrice;
+
       const activeAvailableOnly =
         overrides.availableOnly !== undefined
           ? overrides.availableOnly
@@ -45,8 +49,9 @@ function Dashboard({ user, onLogout, onViewBookings }) {
 
       const query = params.toString();
 
+      // Render backend URL
       const response = await fetch(
-        `http://localhost:5000/api/parking-lots${
+        `https://smartpark1-o9go.onrender.com/api/parking-lots${
           query ? `?${query}` : ""
         }`
       );
@@ -71,6 +76,7 @@ function Dashboard({ user, onLogout, onViewBookings }) {
 
   useEffect(() => {
     fetchParkingLots();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -81,11 +87,15 @@ function Dashboard({ user, onLogout, onViewBookings }) {
   useEffect(() => {
     const handleLotChange = (updatedLot) => {
       setParkingLots((prev) => {
-        const exists = prev.some((lot) => lot._id === updatedLot._id);
+        const exists = prev.some(
+          (lot) => lot._id === updatedLot._id
+        );
 
         if (exists) {
           return prev.map((lot) =>
-            lot._id === updatedLot._id ? updatedLot : lot
+            lot._id === updatedLot._id
+              ? updatedLot
+              : lot
           );
         }
 
@@ -210,15 +220,23 @@ function Dashboard({ user, onLogout, onViewBookings }) {
           />
 
           <label className="filter-checkbox">
+
             <input
               type="checkbox"
               checked={availableOnly}
-              onChange={(e) => setAvailableOnly(e.target.checked)}
+              onChange={(e) =>
+                setAvailableOnly(e.target.checked)
+              }
             />
+
             Available only
+
           </label>
 
-          <button type="submit" className="reserve-button">
+          <button
+            type="submit"
+            className="reserve-button"
+          >
             Search
           </button>
 
@@ -229,6 +247,7 @@ function Dashboard({ user, onLogout, onViewBookings }) {
           >
             Clear
           </button>
+
         </form>
 
         {/* LOADING */}
@@ -313,18 +332,21 @@ function Dashboard({ user, onLogout, onViewBookings }) {
                   </div>
 
                   <div className="availability-bar">
+
                     <div
                       className="availability-fill"
                       style={{
                         width: `${
                           lot.totalSlots > 0
-                            ? (lot.availableSlots / lot.totalSlots) * 100
+                            ? (lot.availableSlots /
+                                lot.totalSlots) *
+                              100
                             : 0
                         }%`,
                       }}
                     />
-                  </div>
 
+                  </div>
 
                   <button
                     type="button"
