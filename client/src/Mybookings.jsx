@@ -68,7 +68,7 @@ function FeedbackForm({ reservationId, onSubmitted }) {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/feedback",
+        "https://smartpark1-o9go.onrender.com/api/feedback",
         {
           method: "POST",
           headers: {
@@ -152,7 +152,7 @@ function MyBookings({ user, onLogout, onBack }) {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/reservations",
+        "https://smartpark1-o9go.onrender.com/api/reservations",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -194,7 +194,7 @@ function MyBookings({ user, onLogout, onBack }) {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        `http://localhost:5000/api/reservations/${reservationId}/cancel`,
+        `https://smartpark1-o9go.onrender.com/api/reservations/${reservationId}/cancel`,
         {
           method: "PUT",
           headers: {

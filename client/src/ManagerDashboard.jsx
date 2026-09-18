@@ -40,7 +40,7 @@ function ManagerDashboard({ user, onLogout }) {
       setLoadingLots(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/parking-lots"
+        "https://smartpark1-o9go.onrender.com/api/parking-lots"
       );
 
       const data = await response.json();
@@ -131,7 +131,7 @@ function ManagerDashboard({ user, onLogout }) {
       setCreatingLot(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/parking-lots",
+        "https://smartpark1-o9go.onrender.com/api/parking-lots",
         {
           method: "POST",
           headers: {
@@ -186,7 +186,7 @@ function ManagerDashboard({ user, onLogout }) {
       setCreatingSlot(true);
 
       const response = await fetch(
-        "http://localhost:5000/api/parking-slots",
+        "https://smartpark1-o9go.onrender.com/api/parking-slots",
         {
           method: "POST",
           headers: {
@@ -229,7 +229,7 @@ function ManagerDashboard({ user, onLogout }) {
       setMessage("");
 
       const response = await fetch(
-        "http://localhost:5000/api/admin/analytics",
+        "https://smartpark1-o9go.onrender.com/api/admin/analytics",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -263,7 +263,7 @@ function ManagerDashboard({ user, onLogout }) {
       setMessage("");
 
       const response = await fetch(
-        "http://localhost:5000/api/admin/reservations",
+        "https://smartpark1-o9go.onrender.com/api/admin/reservations",
         {
           headers: {
             Authorization: `Bearer ${token}`,

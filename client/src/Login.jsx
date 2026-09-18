@@ -20,7 +20,7 @@ function Login({ onLoginSuccess, onRegister, onBack }) {
       setLoading(true);
 
       const response = await fetch(
-  "http://localhost:5000/api/login",
+  "https://smartpark1-o9go.onrender.com/api/login",
         {
           method: "POST",
           headers: {

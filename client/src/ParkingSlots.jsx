@@ -30,7 +30,7 @@ function ParkingSlots({ parkingLot, onBack, user }) {
       const query = floor && floor !== "all" ? `?floor=${floor}` : "";
 
       const response = await fetch(
-        `http://localhost:5000/api/parking-slots/${lotId}${query}`
+        `https://smartpark1-o9go.onrender.com/api/parking-slots/${lotId}${query}`
       );
 
       const data = await response.json();
@@ -152,7 +152,7 @@ function ParkingSlots({ parkingLot, onBack, user }) {
       }
 
       const response = await fetch(
-        "http://localhost:5000/api/reservations",
+        "https://smartpark1-o9go.onrender.com/api/reservations",
         {
           method: "POST",
           headers: {

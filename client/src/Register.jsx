@@ -35,7 +35,7 @@ function Register({
 
       // Yahan asli backend ko call kar rahe hain
       const response = await fetch(
-        "http://localhost:5000/api/register",
+        "https://smartpark1-o9go.onrender.com/api/register",
         {
           method: "POST",
           headers: {
